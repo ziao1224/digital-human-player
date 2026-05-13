@@ -143,6 +143,13 @@ class FileCacheService {
   }
 
   async loadLatestMeta(): Promise<CachedMeta | null> {
+    // 优先加载上次活跃的 PPT（localStorage记录）
+    const activeHash = localStorage.getItem('active_ppt_hash');
+    if (activeHash) {
+      const meta = await this.loadMeta(activeHash);
+      if (meta) return meta;
+    }
+    // 回退：取最新时间戳
     const db = await this.ensureDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction([META_STORE], 'readonly');
@@ -155,6 +162,10 @@ class FileCacheService {
       };
       req.onerror = () => reject(req.error);
     });
+  }
+
+  setActivePPT(hash: string): void {
+    localStorage.setItem('active_ppt_hash', hash);
   }
 
   async updateVoiceKnowledge(pptHash: string, text: string): Promise<boolean> {

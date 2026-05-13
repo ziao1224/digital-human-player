@@ -127,6 +127,7 @@ export default function AdminPage() {
       if (data.slides) {
         loadSlides(data.slides);
         setPptHash(hash);
+        cacheService.setActivePPT(hash);
         if (data.scripts) setSpeechScripts(data.scripts);
         if (data.voiceKnowledge) setVoiceKnowledge(data.voiceKnowledge);
         if (data.images) {
@@ -259,7 +260,7 @@ export default function AdminPage() {
 
         const hash = result.contentHash || result.fileId || '';
         setPptHash(hash);
-
+        cacheService.setActivePPT(hash);
         const cachedMeta = await cacheService.loadMeta(hash);
 
         if (cachedMeta) {
