@@ -279,18 +279,18 @@ export default function AdminPage() {
             const backendScripts = scriptsData.scripts || [];
             if (backendScripts.length > 0) {
               setSpeechScripts(backendScripts);
-              cacheService.saveMeta(hash, result.slides, backendScripts, voiceKnowledge);
+              await cacheService.saveMeta(hash, result.slides, backendScripts, voiceKnowledge);
               toast.success('已从缓存加载演讲稿和视频（跨机器迁移）');
             } else {
               clearBatchCache();
               setSpeechScripts([]);
-              cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
+              await cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
               toast.success('PPT 上传成功，请点击"生成演讲稿"');
             }
           } else {
             clearBatchCache();
             setSpeechScripts([]);
-            cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
+            await cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
             toast.success('PPT 上传成功，请点击"生成演讲稿"');
           }
         }
@@ -353,7 +353,7 @@ export default function AdminPage() {
       
       setSpeechScripts(validScripts);
       
-      cacheService.saveMeta(pptHash, slides, validScripts, voiceKnowledge);
+      await cacheService.saveMeta(pptHash, slides, validScripts, voiceKnowledge);
 
       // 同时保存演讲稿+PPT内容到后端文件缓存（用于跨机器迁移）
       fetch(`${SERVER_CONFIG.BASE_URL}/api/ppt-cache/${pptHash}/scripts`, {
@@ -385,7 +385,7 @@ export default function AdminPage() {
   }, [pptHash, clearFileCache, clearBatchCache]);
 
   // 导入演讲稿
-  const handleImportScripts = useCallback(() => {
+  const handleImportScripts = useCallback(async () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.txt';
@@ -410,7 +410,7 @@ export default function AdminPage() {
         // 对齐到当前slides
         const newScripts = slides.map((_, i) => imported[i] || speechScripts[i] || '');
         setSpeechScripts(newScripts);
-        cacheService.saveMeta(pptHash, slides, newScripts, voiceKnowledge);
+        await cacheService.saveMeta(pptHash, slides, newScripts, voiceKnowledge);
         // 同时保存到后端文件缓存
         fetch(`${SERVER_CONFIG.BASE_URL}/api/ppt-cache/${pptHash}/scripts`, {
           method: 'POST',
@@ -534,14 +534,14 @@ export default function AdminPage() {
   }, []);
 
   // 处理演讲稿编辑
-  const handleScriptEdit = useCallback((index: number, newScript: string) => {
+  const handleScriptEdit = useCallback(async (index: number, newScript: string) => {
     // 1. 更新演讲稿数组
     const newScripts = [...speechScripts];
     newScripts[index] = newScript;
     setSpeechScripts(newScripts);
 
     // 2. 保存到本地缓存
-    cacheService.saveMeta(pptHash, slides, newScripts, voiceKnowledge);
+    await cacheService.saveMeta(pptHash, slides, newScripts, voiceKnowledge);
 
     // 3. 更新批量生成任务并清空该页面的视频缓存
     updateBatchScript(index, newScript);
