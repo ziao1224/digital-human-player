@@ -208,7 +208,7 @@ export function PPTUploaderWithImages({
             <><FileUp className="w-4 h-4" />选择文件</>
           )}
         </Button>
-        <p className="text-xs text-gray-400 mt-4">支持 .pptx 格式</p>
+        <p className="text-xs text-gray-400 mt-4">仅支持 .pptx 格式的 PowerPoint 文件</p>
       </div>
     );
   }

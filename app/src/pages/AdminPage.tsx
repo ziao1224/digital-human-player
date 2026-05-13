@@ -78,6 +78,8 @@ export default function AdminPage() {
   // 语音问答知识库（手动编辑）
   const [voiceKnowledge, setVoiceKnowledge] = useState<string>('');
   const [voiceKnowledgeSaving, setVoiceKnowledgeSaving] = useState(false);
+  const [knowledgeEditing, setKnowledgeEditing] = useState(false);
+  const knowledgeBackupRef = useRef('');
 
   // 批量生成
   const {
@@ -282,15 +284,13 @@ export default function AdminPage() {
             } else {
               clearBatchCache();
               setSpeechScripts([]);
-              setVoiceKnowledge('');
-              cacheService.saveMeta(hash, result.slides, [], '');
+              cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
               toast.success('PPT 上传成功，请点击"生成演讲稿"');
             }
           } else {
             clearBatchCache();
             setSpeechScripts([]);
-            setVoiceKnowledge('');
-            cacheService.saveMeta(hash, result.slides, [], '');
+            cacheService.saveMeta(hash, result.slides, [], voiceKnowledge);
             toast.success('PPT 上传成功，请点击"生成演讲稿"');
           }
         }
@@ -893,36 +893,41 @@ export default function AdminPage() {
                   <BookOpen className="w-4 h-4 text-blue-600" />
                   <h3 className="text-sm font-semibold text-gray-800">语音问答知识库（可选）</h3>
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 ml-auto">
-                    {voiceKnowledge.length}/8000
+                    {voiceKnowledge.length} 字
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mb-3">
-                  PPT内容之外的额外知识补充。每次问答PPT内容会自动带上，此处可以追加：人物背景、公司简介、专业术语解释等。留空则仅使用PPT内容。
+                  PPT 之外的补充知识。点击「编辑」修改，点「保存」生效。留空则仅使用 PPT 内容。
                 </p>
-                <Textarea
-                  value={voiceKnowledge}
-                  onChange={(e) => setVoiceKnowledge(e.target.value)}
-                  placeholder="例如：你是一位PPT讲解员，正在讲解《AI大模型技术》演示文稿。&#10;&#10;PPT大纲：&#10;1. AI发展历程&#10;2. 大模型技术原理&#10;3. 应用场景...&#10;&#10;当前重点：大模型通过Transformer架构实现..."
-                  className="min-h-[120px] text-sm resize-y"
-                />
-                <div className="flex items-center justify-between mt-3">
-                  <p className="text-[10px] text-gray-400">
-                    {voiceKnowledge.length > 7000 ? (
-                      <span className="text-amber-600">接近长度上限，建议精简内容</span>
-                    ) : (
-                      '保存后会与当前PPT关联，播放页面语音问答将优先使用此内容'
-                    )}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={handleSaveVoiceKnowledge}
-                    disabled={voiceKnowledgeSaving}
-                    className="gap-1.5 text-xs"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    {voiceKnowledgeSaving ? '保存中...' : '保存知识库'}
-                  </Button>
-                </div>
+                {knowledgeEditing ? (
+                  <>
+                    <Textarea
+                      value={voiceKnowledge}
+                      onChange={(e) => setVoiceKnowledge(e.target.value)}
+                      className="min-h-[120px] text-sm resize-y"
+                    />
+                    <div className="flex items-center justify-between mt-3">
+                      <button onClick={() => { setVoiceKnowledge(knowledgeBackupRef.current); setKnowledgeEditing(false); }} className="text-xs text-gray-400 hover:text-gray-600">取消编辑</button>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleSaveVoiceKnowledge} disabled={voiceKnowledgeSaving} className="gap-1.5 text-xs">
+                          <Save className="w-3.5 h-3.5" />
+                          {voiceKnowledgeSaving ? '保存中...' : '保存知识库'}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="min-h-[120px] max-h-[200px] overflow-y-auto bg-gray-50 rounded-lg p-3 text-sm text-gray-700 whitespace-pre-wrap border">
+                      {voiceKnowledge || <span className="text-gray-400">未设置知识库，将仅使用 PPT 内容。编辑 knowledge/default.md 文件可更改默认值。</span>}
+                    </div>
+                    <div className="flex justify-end mt-3">
+                      <Button size="sm" variant="outline" onClick={() => { knowledgeBackupRef.current = voiceKnowledge; setKnowledgeEditing(true); }} className="gap-1.5 text-xs">
+                        编辑
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
