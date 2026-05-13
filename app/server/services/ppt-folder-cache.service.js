@@ -34,19 +34,31 @@ class PPTFolderCacheService {
     try {
       if (fs.existsSync(INDEX_FILE)) {
         const index = JSON.parse(fs.readFileSync(INDEX_FILE, 'utf8'));
-        // 简单校验：如果索引为空但目录有内容，重新扫描
-        const dirCount = this.countPPTDirs();
-        const indexCount = Object.keys(index.ppts || {}).length;
-        if (indexCount === 0 && dirCount > 0) {
-          console.log('[PPTCache] 索引为空但目录有内容，开始扫描重建...');
-          return this.scanCacheDir();
+        // index.json 存在则信任，但每个条目启动时现场核实视频 + 演讲稿
+        let rebuilt = false;
+        for (const [hash, meta] of Object.entries(index.ppts || {})) {
+          const status = this.getPPTStatus(hash);
+          if (!status.exists) {
+            delete index.ppts[hash];
+            rebuilt = true;
+          } else {
+            // 用实际磁盘状态更新 meta
+            meta.totalSlides = status.videoCount;
+            meta.title = status.meta?.title || meta.title || 'Untitled';
+            meta.hasScripts = status.hasScripts;
+            meta.videoCount = status.videoCount;
+            meta.oldFormat = status.oldFormat;
+          }
+        }
+        if (rebuilt) {
+          console.log('[PPTCache] 已清理无效条目，保存索引');
+          this.saveIndex();
         }
         return index;
       }
     } catch (e) {
       console.error('[PPTCache] 索引文件损坏，开始扫描重建...');
     }
-    // 没有索引文件或损坏，扫描目录
     return this.scanCacheDir();
   }
 
@@ -341,11 +353,20 @@ class PPTFolderCacheService {
   }
 
   getAllPPTs() {
-    return Object.entries(this.index.ppts).map(([hash, meta]) => ({
-      hash,
-      ...meta,
-      status: this.getPPTStatus(hash)
-    }));
+    return Object.entries(this.index.ppts).map(([hash, meta]) => {
+      const status = this.getPPTStatus(hash);
+      return {
+        hash,
+        title: meta.title || 'Untitled',
+        totalSlides: meta.totalSlides || status.videoCount || 0,
+        videoCount: status.videoCount,
+        hasScripts: status.hasScripts,
+        isComplete: status.isComplete,
+        oldFormat: meta.oldFormat || false,
+        createdAt: meta.createdAt,
+        updatedAt: meta.updatedAt,
+      };
+    });
   }
 
   deletePPT(pptHash) {
