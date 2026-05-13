@@ -589,75 +589,44 @@ export default function AdminPage() {
             </div>
             <div>
               <h1 className="font-bold text-lg text-gray-900">{BOT_NAME} - AI数字人演讲系统</h1>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <span className={`w-2 h-2 rounded-full ${avatarServiceAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span>{avatarServiceAvailable ? `${BOT_NAME}已就绪` : '数字人服务未启动'}</span>
-              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-3">
-            {/* 批量生成进度条 */}
+
+          <div className="flex items-center gap-2">
+            {/* 生成进度 */}
             {isBatching && (
-              <div className="flex items-center gap-3">
-                <div className="text-sm text-gray-600">
-                  {BOT_NAME}正在准备视频... {Math.round(batchProgress)}%
-                </div>
-                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${batchProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* 进入播放页面 */}
-            <Link to="/player">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                <MonitorPlay className="w-4 h-4" />
-                进入播放页面
-              </Button>
-            </Link>
-            
-            {/* 语音问答按钮 */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowVoiceChat(!showVoiceChat)}
-              className="gap-2"
-            >
-              <MessageCircle className="w-4 h-4" />
-              语音问答
-            </Button>
-            
-            {/* 导入演讲稿 */}
-            {slides.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImportScripts}
-                className="gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                导入演讲稿
-              </Button>
+              <span className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                生成中 {Math.round(batchProgress)}%
+              </span>
             )}
 
-            {/* 设置按钮 */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(true)}
-              className="gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              设置
+            {/* 操作组：导入+设置 */}
+            {slides.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleImportScripts} className="gap-1.5 text-xs">
+                <Upload className="w-3.5 h-3.5" /> 导入演讲稿
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)} className="gap-1.5 text-xs">
+              <Settings className="w-3.5 h-3.5" /> 演讲稿设置
             </Button>
+
+            <div className="w-px h-6 bg-gray-200 mx-1" />
+
+            {/* 入口组：问答+播放 */}
+            <Button
+              size="sm"
+              onClick={() => setShowVoiceChat(!showVoiceChat)}
+              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <MessageCircle className="w-3.5 h-3.5" />
+              语音问答
+            </Button>
+            <Link to="/player">
+              <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700 text-white">
+                <MonitorPlay className="w-3.5 h-3.5" />
+                进入播放
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
