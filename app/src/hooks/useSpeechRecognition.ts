@@ -22,7 +22,7 @@ export function useSpeechRecognition(options: UseSpeechRecognitionOptions = {}) 
 
     setIsSupported(true);
     const recognition = new SpeechRecognitionAPI();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = language;
 

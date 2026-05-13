@@ -87,6 +87,9 @@ export function RealtimeVoicePanel({
 
   const handleKnowledgeQuestion = useCallback(async (question: string) => {
     if (!deepseekApiKey) { toast.error('未配置 DeepSeek API Key'); return; }
+    // 如果正在播放，先打断
+    volcanoTTSRef?.current?.stop();
+    speechSynthesis.cancel();
     setMessages(prev => [...prev, { role: 'user', text: question }]);
     setCurrentTranscript('');
     setVoiceStatus('thinking');
@@ -120,11 +123,19 @@ export function RealtimeVoicePanel({
       setVoiceStatus('speaking');
 
       if (volcanoTTSRef?.current) {
-        await volcanoTTSRef.current.speak(answer, () => setVoiceStatus('speaking'), () => setVoiceStatus('idle'));
+        await volcanoTTSRef.current.speak(answer, () => setVoiceStatus('speaking'), () => {
+          setVoiceStatus('listening');
+          sr.startListening(); // 播完自动听下一轮
+        });
       } else {
         const u = new SpeechSynthesisUtterance(answer); u.lang = 'zh-CN'; u.rate = 1.1;
-        u.onend = () => setVoiceStatus('idle'); speechSynthesis.speak(u);
+        u.onend = () => {
+          setVoiceStatus('listening');
+          sr.startListening();
+        };
+        speechSynthesis.speak(u);
       }
+      return;
     } catch (err) {
       toast.error('知识问答失败');
       setVoiceStatus('idle');
@@ -139,12 +150,18 @@ export function RealtimeVoicePanel({
     },
   });
 
-  const toggleKnowledgeRecording = useCallback(() => {
-    if (sr.isListening) { sr.stopListening(); setVoiceStatus('idle'); }
-    else {
-      if (voiceStatus === 'speaking') { volcanoTTSRef?.current?.stop(); speechSynthesis.cancel(); }
-      sr.startListening(); setVoiceStatus('listening');
-    }
+  const toggleKnowledgeRecording = useCallback(async () => {
+    if (sr.isListening) { sr.stopListening(); setVoiceStatus('idle'); return; }
+    if (voiceStatus === 'speaking') { volcanoTTSRef?.current?.stop(); speechSynthesis.cancel(); }
+
+    // 检测麦克风
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasMic = devices.some(d => d.kind === 'audioinput');
+      if (!hasMic) { toast.error('未检测到麦克风，请接入后重试'); return; }
+    } catch {}
+
+    sr.startListening(); setVoiceStatus('listening');
   }, [sr, voiceStatus, volcanoTTSRef]);
 
   // ====== 实时对话模式 (Volcano Realtime) ======
