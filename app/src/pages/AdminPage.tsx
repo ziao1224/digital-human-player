@@ -282,12 +282,14 @@ export default function AdminPage() {
               clearBatchCache();
               setSpeechScripts([]);
               setVoiceKnowledge('');
+              cacheService.saveMeta(hash, result.slides, [], '');
               toast.success('PPT 上传成功，请点击"生成演讲稿"');
             }
           } else {
             clearBatchCache();
             setSpeechScripts([]);
             setVoiceKnowledge('');
+            cacheService.saveMeta(hash, result.slides, [], '');
             toast.success('PPT 上传成功，请点击"生成演讲稿"');
           }
         }
