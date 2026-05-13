@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback, type MutableRefObject, useEffect } from 'react';
 import { toast } from 'sonner';
+import { SERVER_CONFIG } from '@/config/server.config';
 import { avatarService } from '@/services/avatar.service';
 import { cacheService } from '@/services/file-cache.service';
 import type { VolcanoSpeechService } from '@/services/volcano-speech.service';
@@ -55,36 +56,43 @@ export function useBatchAvatar(options: UseBatchAvatarOptions) {
       
       setIsLoadingFromCache(true);
       try {
+        // 1. 先查 IndexedDB
         const cachedCount = await cacheService.getCachedSlideCount(pptHash);
-        
-        if (cachedCount > 0) {
-          toast.success(`发现 ${cachedCount} 个已缓存的页面，正在加载...`);
-          
-          // 加载所有缓存的媒体
+
+        // 2. 同时查后端磁盘缓存（跨机器迁移场景）
+        let backendVideos: Map<number, string> = new Map();
+        if (cachedCount === 0) {
+          try {
+            const statusRes = await fetch(`${SERVER_CONFIG.BASE_URL}/api/ppt-cache/${pptHash}/status`);
+            if (statusRes.ok) {
+              const status = await statusRes.json();
+              if (status.videos) {
+                for (const v of status.videos) {
+                  backendVideos.set(v.slideIndex, `${SERVER_CONFIG.BASE_URL}${v.url}`);
+                }
+              }
+            }
+          } catch {}
+        }
+
+        const totalCached = cachedCount + backendVideos.size;
+        if (totalCached > 0) {
           const loadedTasks: BatchTask[] = [];
           for (let i = 0; i < speechScripts.length; i++) {
-            const cached = await cacheService.loadMedia(pptHash, i);
-            if (cached) {
-              cacheRef.current.set(i, {
-                videoUrl: cached.videoUrl,
-                audioBlob: cached.audioBlob,
-              });
-              loadedTasks.push({
-                slideIndex: i,
-                script: speechScripts[i],
-                status: 'cached',
-                videoUrl: cached.videoUrl,
-                audioBlob: cached.audioBlob,
-              });
+            // IndexedDB 优先
+            const cached = cachedCount > 0 ? await cacheService.loadMedia(pptHash, i) : null;
+            // 回退到后端磁盘缓存
+            const backendUrl = cached ? null : backendVideos.get(i);
+            if (cached || backendUrl) {
+              const url = cached?.videoUrl || backendUrl || '';
+              const blob = cached?.audioBlob || new Blob();
+              cacheRef.current.set(i, { videoUrl: url, audioBlob: blob });
+              loadedTasks.push({ slideIndex: i, script: speechScripts[i], status: 'cached', videoUrl: url, audioBlob: blob });
             } else {
-              loadedTasks.push({
-                slideIndex: i,
-                script: speechScripts[i],
-                status: 'pending',
-              });
+              loadedTasks.push({ slideIndex: i, script: speechScripts[i], status: 'pending' });
             }
           }
-          
+
           setTasks(loadedTasks);
           const cachedTasks = loadedTasks.filter(t => t.status === 'cached');
           if (cachedTasks.length > 0) {
