@@ -300,6 +300,12 @@ class PPTFolderCacheService {
     }, null, 2));
 
     this.index.ppts[pptHash].scripts = scripts;
+    this.index.ppts[pptHash].totalSlides = slides?.length || scripts?.length || 0;
+    // 从第一页标题提取 PPT 名称
+    const firstSlide = slides?.[0];
+    if (firstSlide?.title) {
+      this.index.ppts[pptHash].title = firstSlide.title;
+    }
     this.index.ppts[pptHash].updatedAt = new Date().toISOString();
     this.saveIndex();
 
