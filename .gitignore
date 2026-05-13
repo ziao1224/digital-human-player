@@ -1,0 +1,12 @@
+node_modules/
+venv/
+__pycache__/
+dist/
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.gif
+.env
+*.log
+.vscode/
