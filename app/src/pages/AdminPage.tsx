@@ -217,7 +217,7 @@ export default function AdminPage() {
       if (meta) {
         loadSlides(meta.slides);
         setSpeechScripts(meta.speechScripts);
-        setVoiceKnowledge(meta.voiceKnowledge || '');
+        if (meta.voiceKnowledge) setVoiceKnowledge(meta.voiceKnowledge);
         setPptHash(meta.pptHash);
         const imgStored = localStorage.getItem('ppt_images');
         if (imgStored) setImages(JSON.parse(imgStored));
@@ -268,7 +268,7 @@ export default function AdminPage() {
         if (cachedMeta) {
           toast.success('发现已缓存的演讲稿和数字人视频，正在加载...');
           setSpeechScripts(cachedMeta.speechScripts);
-          setVoiceKnowledge(cachedMeta.voiceKnowledge || '');
+          if (cachedMeta.voiceKnowledge) setVoiceKnowledge(cachedMeta.voiceKnowledge);
         } else {
           // IndexedDB 无缓存，尝试后端文件夹缓存（跨机器迁移场景）
           const backendScriptsRes = await fetch(
